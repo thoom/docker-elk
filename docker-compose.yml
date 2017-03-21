@@ -18,6 +18,8 @@ services:
       xpack.watcher.enabled: "false"
     networks:
       - elk
+    volumes: 
+      - ./esdata:/usr/share/elasticsearch/data
 
   logstash:
     build: logstash/
@@ -26,12 +28,24 @@ services:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
     ports:
       - "5000:5000"
+      - "12345:12345"
     environment:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
-    networks:
+    networks: 
       - elk
     depends_on:
       - elasticsearch
+
+  logspout:
+    command: "-c '/bin/logspout syslog://logstash:12345'"
+    entrypoint: /bin/sh
+    image: 'gliderlabs/logspout:latest'
+    depends_on:
+      - logstash
+    networks:
+      - elk
+    volumes:
+      - '/var/run/docker.sock:/tmp/docker.sock'
 
   kibana:
     build: kibana/
@@ -39,12 +53,12 @@ services:
       - ./kibana/config/:/usr/share/kibana/config
     ports:
       - "5601:5601"
-    networks:
+    networks: 
       - elk
     depends_on:
       - elasticsearch
 
-networks:
+networks: 
 
   elk:
     driver: bridge
