@@ -4,9 +4,9 @@ services:
 
   elasticsearch:
     build: elasticsearch/
-    ports:
-      - "9200:9200"
-      - "9300:9300"
+    # ports:
+    #   - "9200:9200"
+    #   - "9300:9300"
     environment:
       ES_JAVA_OPTS: "-Xmx256m -Xms256m"
       # disable X-Pack
@@ -26,9 +26,10 @@ services:
     volumes:
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
       - ./logstash/pipeline:/usr/share/logstash/pipeline
-    ports:
-      - "5000:5000"
-      - "12345:12345"
+    # ports:
+    #   - "5000:5000"
+    #   - "12345:12345"
+      # - "30177:5514"
     environment:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
     networks: 
@@ -37,9 +38,11 @@ services:
       - elasticsearch
 
   logspout:
-    command: "-c '/bin/logspout syslog://logstash:12345'"
+    command: "-c '/bin/logspout syslog://logstash:5514'"
     entrypoint: /bin/sh
     image: 'gliderlabs/logspout:latest'
+    environment: 
+      SYSLOG_FORMAT: rfc3164
     depends_on:
       - logstash
     networks:
@@ -49,14 +52,34 @@ services:
 
   kibana:
     build: kibana/
+    environment: 
+      LOGSPOUT: ignore
     volumes:
       - ./kibana/config/:/usr/share/kibana/config
-    ports:
-      - "5601:5601"
+    # ports:
+    #   - "5601:5601"
     networks: 
       - elk
     depends_on:
       - elasticsearch
+
+  nginx:
+    image: nginx:alpine
+    environment: 
+      LOGSPOUT: ignore
+    volumes:
+      - ./nginx/passwords:/etc/nginx/passwords
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/config/nginx-site.conf:/etc/nginx/conf.d/default.conf 
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+      - kibana
+    ports:
+      - "5601:5601"
+      - "9200:9200"
+      - "30177:9200"
 
 networks: 
 
