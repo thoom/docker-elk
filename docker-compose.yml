@@ -3,10 +3,7 @@ version: '2'
 services:
 
   elasticsearch:
-    build: elasticsearch/
-    # ports:
-    #   - "9200:9200"
-    #   - "9300:9300"
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.2.2
     environment:
       ES_JAVA_OPTS: "-Xmx256m -Xms256m"
       # disable X-Pack
@@ -22,16 +19,14 @@ services:
       - ./esdata:/usr/share/elasticsearch/data
 
   logstash:
-    build: logstash/
+    image: docker.elastic.co/logstash/logstash:5.2.2
     volumes:
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
       - ./logstash/pipeline:/usr/share/logstash/pipeline
-    # ports:
-    #   - "5000:5000"
-    #   - "12345:12345"
-      # - "30177:5514"
     environment:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    expose:
+      - "5514"
     networks: 
       - elk
     depends_on:
@@ -51,13 +46,11 @@ services:
       - '/var/run/docker.sock:/tmp/docker.sock'
 
   kibana:
-    build: kibana/
+    image: docker.elastic.co/kibana/kibana:5.2.2
     environment: 
       LOGSPOUT: ignore
     volumes:
       - ./kibana/config/:/usr/share/kibana/config
-    # ports:
-    #   - "5601:5601"
     networks: 
       - elk
     depends_on:
@@ -79,7 +72,6 @@ services:
     ports:
       - "5601:5601"
       - "9200:9200"
-      - "30177:9200"
 
 networks: 
 
